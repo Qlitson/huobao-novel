@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar styles for dark mode */
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Smooth transitions */
+/* 平滑过渡效果 */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Element Plus dark mode overrides */
+/* Element Plus 深色模式覆盖 */
+.dark {
+  --el-bg-color: #1f2937;
+  --el-bg-color-page: #111827;
+  --el-bg-color-overlay: #374151;
+  --el-text-color-primary: #f3f4f6;
+  --el-text-color-regular: #d1d5db;
+  --el-text-color-secondary: #9ca3af;
+  --el-text-color-placeholder: #6b7280;
+  --el-border-color: #374151;
+  --el-border-color-light: #4b5563;
+  --el-border-color-lighter: #6b7280;
+  --el-fill-color: #374151;
+  --el-fill-color-light: #4b5563;
+  --el-fill-color-lighter: #6b7280;
+  --el-fill-color-blank: #1f2937;
+}
+
+/* Card hover effect */
+/* 卡片悬停效果 */
+.hover-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Loading animation */
+/* 加载动画 */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Typing animation */
+/* 打字动画 */
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.typing-effect {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 2s steps(40, end);
+}
+
+/* Naive UI textarea global styles */
+/* Naive UI 文本域全局样式 */
+.novel-textarea .n-input {
+  @apply bg-gray-50 dark:bg-[#18181c] rounded-xl;
+}
+
+.novel-textarea .n-input__textarea-el {
+  @apply bg-transparent font-mono text-sm leading-relaxed;
+}
