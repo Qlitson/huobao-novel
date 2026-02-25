@@ -5,10 +5,11 @@ import { useNovelStore } from '../stores/novel'
 import { useSettingsStore } from '../stores/settings'
 import { generateArchitecture, generateChapterBlueprint, parseChapterBlueprint, exportNovelToText, exportNovelToMarkdown } from '../api/generator'
 import { useMessage, useDialog, NButton, NTabs, NTabPane, NCard, NProgress, NTag, NIcon } from 'naive-ui'
-import { ArrowBackOutline, WarningOutline, GridOutline, ListOutline, PencilOutline, DownloadOutline, DocumentTextOutline, ReloadOutline } from '@vicons/ionicons5'
+import { ArrowBackOutline, WarningOutline, GridOutline, ListOutline, PencilOutline, DownloadOutline, DocumentTextOutline, ReloadOutline, CompassOutline } from '@vicons/ionicons5'
 import ArchitecturePanel from '../components/ArchitecturePanel.vue'
 import ChapterBlueprintPanel from '../components/ChapterBlueprintPanel.vue'
 import ChapterWriterPanel from '../components/ChapterWriterPanel.vue'
+import InspirationCompass from '../components/compass/InspirationCompass.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -293,6 +294,25 @@ async function confirmRegenerate(type) {
         </template>
 
         <ChapterWriterPanel
+          :project="project"
+          :is-generating="isGenerating"
+          @update:is-generating="isGenerating = $event"
+        />
+      </n-tab-pane>
+
+      <!-- Inspiration Compass tab - 灵感罗盘标签页 -->
+      <n-tab-pane name="compass">
+        <template #tab>
+          <div class="flex items-center gap-2">
+            <CompassOutline class="w-4 h-4" />
+            <span>灵感罗盘</span>
+            <n-tag v-if="project.graphData?.graphGenerated" type="success" size="small" :bordered="false" round>
+              已生成
+            </n-tag>
+          </div>
+        </template>
+
+        <InspirationCompass
           :project="project"
           :is-generating="isGenerating"
           @update:is-generating="isGenerating = $event"

@@ -6,6 +6,9 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   base: '/huobao-novel/',
   plugins: [vue()],
+  server: {
+    host: '0.0.0.0',
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

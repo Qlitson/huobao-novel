@@ -33,6 +33,16 @@ export const useNovelStore = defineStore('novel', () => {
       chapters: {},
       // Global summary - 前文摘要
       globalSummary: '',
+      // Graph data - 关系图谱数据
+      graphData: {
+        version: 1,
+        generatedAt: null,
+        snapshots: {},
+        audit: { inconsistencies: [], lastAuditAt: null },
+        graphGenerated: false
+      },
+      // Chapter graphs - 每章独立的关系图谱 { [chapterNum]: { nodes, edges } }
+      chapterGraphs: {},
       // Generation status - 生成状态
       architectureGenerated: false,
       blueprintGenerated: false
