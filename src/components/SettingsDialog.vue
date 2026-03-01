@@ -30,6 +30,12 @@ const channels = [
       // 'gemini-2.5-pro'
     ]
   },
+  { 
+    id: 'QW', 
+    name: 'QW',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    models: ['qwen-max']
+  },
   // { 
   //   id: 'openai', 
   //   name: 'OpenAI',
