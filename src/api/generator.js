@@ -351,6 +351,60 @@ export async function finalizeChapter(project, chapterNumber, chapterText, apiCo
 }
 
 /**
+ * Analyze existing chapters and build global summary & character state
+ * 基于已有章节批量生成前文摘要与角色状态
+ */
+export async function analyzeExistingChapters(project, apiConfig, onProgress) {
+  const chapterEntries = Object.entries(project.chapters || {})
+  if (chapterEntries.length === 0) {
+    return {
+      globalSummary: project.globalSummary || '',
+      characterState: project.characterState || ''
+    }
+  }
+
+  const chapterNums = chapterEntries
+    .map(([num]) => Number(num))
+    .filter((n) => !Number.isNaN(n))
+    .sort((a, b) => a - b)
+
+  let globalSummary = project.globalSummary || ''
+  let characterState = project.characterState || ''
+
+  const total = chapterNums.length
+
+  for (let index = 0; index < chapterNums.length; index++) {
+    const chapterNumber = chapterNums[index]
+    const chapterText = project.chapters[chapterNumber]
+    if (!chapterText) continue
+
+    onProgress?.(`正在分析第 ${chapterNumber} 章...`, index + 1, total)
+
+    const result = await finalizeChapter(
+      {
+        ...project,
+        globalSummary,
+        characterState
+      },
+      chapterNumber,
+      chapterText,
+      apiConfig,
+      () => {}
+    )
+
+    globalSummary = result.globalSummary || globalSummary
+    characterState = result.characterState || characterState
+  }
+
+  onProgress?.('已有章节分析完成', total, total)
+
+  return {
+    globalSummary,
+    characterState
+  }
+}
+
+/**
  * Enrich chapter text - 扩写章节
  */
 export async function enrichChapter(chapterText, wordNumber, apiConfig, onProgress) {

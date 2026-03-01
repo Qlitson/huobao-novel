@@ -2,9 +2,9 @@
 import { ref, computed } from 'vue'
 import { useNovelStore } from '../stores/novel'
 import { useSettingsStore } from '../stores/settings'
-import { generateChapterDraft, finalizeChapter, enrichChapter, parseChapterBlueprint } from '../api/generator'
+import { generateChapterDraft, finalizeChapter, enrichChapter, parseChapterBlueprint, analyzeExistingChapters } from '../api/generator'
 import { generateChapterGraph } from '../api/compass-generator'
-import { useMessage, useDialog, NButton, NInput, NProgress, NTag, NIcon, NTooltip } from 'naive-ui'
+import { useMessage, useDialog, NButton, NInput, NProgress, NTag, NIcon, NTooltip, NModal, NRadioGroup, NRadioButton } from 'naive-ui'
 import { WarningOutline, SparklesOutline, PencilOutline, SaveOutline, CheckmarkOutline, CheckmarkCircleOutline, ReloadOutline, HelpCircleOutline, DocumentTextOutline } from '@vicons/ionicons5'
 import ChapterRelationGraph from './compass/ChapterRelationGraph.vue'
 
@@ -25,6 +25,11 @@ const chapterContent = ref('')
 const generationStep = ref('')
 const graphGenerating = ref(false)
 const graphStep = ref('')
+
+// Import existing chapters - 导入已有章节
+const showImportModal = ref(false)
+const importMode = ref('full') // 预留模式位，当前仅整本文本导入
+const importText = ref('')
 
 // Parsed blueprint chapters - 解析后的大纲章节
 const blueprintChapters = computed(() => {
@@ -65,6 +70,62 @@ const currentChapterGraph = computed(() => {
 function loadChapter(num) {
   currentChapter.value = num
   chapterContent.value = props.project?.chapters?.[num] || ''
+}
+
+// Import chapters from raw text - 从整本文本导入章节
+async function handleImportChapters() {
+  if (!importText.value.trim()) {
+    message.warning('请先粘贴要导入的章节文本')
+    return
+  }
+
+  try {
+    emit('update:isGenerating', true)
+    generationStep.value = '正在解析章节文本...'
+
+    const { parseChaptersFromText } = await import('../utils/chapter-import.js')
+    const parsed = parseChaptersFromText(importText.value)
+
+    const parsedNums = Object.keys(parsed)
+    if (parsedNums.length === 0) {
+      message.warning('未识别到「第X章」格式的章节标题，请检查文本格式')
+      return
+    }
+
+    // Merge with existing chapters - 合并到现有章节
+    const mergedChapters = {
+      ...(props.project.chapters || {}),
+      ...parsed
+    }
+
+    novelStore.updateProject(props.project.id, { chapters: mergedChapters })
+
+    // Analyze existing chapters to build summary & character state
+    generationStep.value = '正在分析已有章节，生成摘要和角色状态...'
+
+    const result = await analyzeExistingChapters(
+      { ...props.project, chapters: mergedChapters },
+      settings.getStageConfig('finalize'),
+      (step, current, total) => {
+        generationStep.value = `${step} (${current}/${total})`
+      }
+    )
+
+    novelStore.updateProject(props.project.id, {
+      ...result,
+      chapters: mergedChapters
+    })
+
+    message.success(`已导入并分析 ${parsedNums.length} 个章节`)
+    showImportModal.value = false
+    importText.value = ''
+  } catch (error) {
+    console.error('Import chapters error:', error)
+    message.error('导入失败: ' + error.message)
+  } finally {
+    emit('update:isGenerating', false)
+    generationStep.value = ''
+  }
 }
 
 // Generate chapter draft - 生成章节草稿
@@ -264,10 +325,18 @@ loadChapter(nextChapterToWrite.value)
       <!-- Progress indicator - 进度指示 -->
       <div class="bg-white dark:bg-[#1f1f23] rounded-xl p-5 border border-gray-200/80 dark:border-gray-700/50">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400">写作进度</span>
-          <span class="text-sm font-bold text-gray-800 dark:text-white">
-            {{ writtenChaptersCount }} / {{ project.numberOfChapters }} 章
-          </span>
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">写作进度</span>
+            <span class="text-sm font-bold text-gray-800 dark:text-white">
+              {{ writtenChaptersCount }} / {{ project.numberOfChapters }} 章
+            </span>
+          </div>
+          <n-button size="small" tertiary @click="showImportModal = true">
+            <template #icon>
+              <n-icon><DocumentTextOutline /></n-icon>
+            </template>
+            导入已有章节
+          </n-button>
         </div>
         <n-progress 
           type="line"
@@ -430,6 +499,45 @@ loadChapter(nextChapterToWrite.value)
         </div>
       </div>
     </template>
+
+    <!-- Import chapters modal - 导入章节弹窗 -->
+    <n-modal
+      v-model:show="showImportModal"
+      preset="card"
+      title="导入已有章节"
+      :mask-closable="false"
+      style="width: 640px"
+      :bordered="false"
+      class="!rounded-2xl"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+          将你已经写好的章节文本粘贴到下面的输入框中，系统会按照「第X章」标题自动切分章节，并基于这些章节生成前文摘要和角色状态，供后续 AI 续写参考。
+        </p>
+
+        <n-input
+          v-model:value="importText"
+          type="textarea"
+          :autosize="{ minRows: 12, maxRows: 24 }"
+          placeholder="示例：&#10;第1章 开端&#10;这里是正文......&#10;&#10;第2章 转折&#10;这里是第二章正文......"
+        />
+
+        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>提示：支持只粘贴前几章，也可以整本文本一起粘贴。</span>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <n-button @click="showImportModal = false">
+            取消
+          </n-button>
+          <n-button type="primary" @click="handleImportChapters">
+            开始导入并分析
+          </n-button>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
